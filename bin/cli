@@ -1,0 +1,118 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'ruby-jmeter'
+require __dir__ + '/../helpers/test_defaults'
+require __dir__ + '/../helpers/test_helper'
+
+include TestDefaults
+include TestHelper
+# Run Types
+TYPE_JMX   = 'jmx'.freeze
+TYPE_FLOOD = 'flood'.freeze
+TYPE_JMETER = 'jmeter'.freeze
+VALID_RUN_TYPES = [TYPE_JMX, TYPE_FLOOD, TYPE_JMETER].freeze
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = 'Usage: bin/cli <command> [options]'
+  opts.separator ''
+  opts.separator 'Available commands:'
+  opts.separator "\tflood\tRun flood"
+  opts.separator "\tjmx\tGenerate JMX file"
+  opts.separator "\tjmeter\tRun Jmeter non-GUI"
+  opts.separator "\tlist\tList available tests"
+  opts.separator ''
+  opts.separator 'Options:'
+  opts.on('-v', '--verbose', 'Run verbosely') do |v|
+    options[:verbose] = v
+  end
+
+  opts.on('-d', '--duration N', Float, 'Set test duration in seconds') do |dur|
+    raise 'Duration must be a number greater than 1!' unless dur > 0
+
+    options[:duration] = dur.to_i
+  end
+
+  opts.on('-c', '--concurrency N', Float, 'Set concurrency per grid node') do |c|
+    raise 'Concurrency must be a number greater than 1!' unless c > 0
+
+    options[:concurrency] = c.to_i
+  end
+
+  opts.on('-r', '--rampup N', Float, 'Set ramp up time in seconds') do |r|
+    raise 'Ramp up must be a number greater than 1!' unless r > 0
+
+    options[:rampup] = r.to_i
+  end
+
+  opts.on('-g', '--grid-instances N', Float, 'Set nunber of flood grid instances') do |num|
+    raise 'Grid instances must be a number greater than 1!' unless num > 0
+
+    options[:grid_instances] = num.to_i
+  end
+
+  opts.on('-p', '--project PROJECT', 'Specify project name') do |project|
+    options[:project] = project
+  end
+end.parse!
+
+command = ARGV[0]
+
+def jmx(test_response, filename)
+  test_response.jmx(file: filename)
+end
+
+def flood(test_response, name, options)
+  test_response.flood ENV['FLOOD_API_KEY'],
+                      privacy: 'public',
+                      name: name,
+                      project: options[:project] || 'example',
+                      files: default_flood_files,
+                      grids: [
+                        {
+                          infrastructure: 'demand',
+                          instance_type: 'm5.xlarge',
+                          instance_quantity: options[:grid_instances] || 1,
+                          region: 'ap-southeast-2',
+                          stop_after: options[:duration]/60 + 5
+                        }
+                      ]
+end
+
+def jmeter(test_response, testname)
+  test_path = "#{__dir__}/../test-suite/#{testname}/#{testname}"
+  test_response.run file: "#{test_path}.jmx",
+                    log: "#{test_path}.log",
+                    jtl: "#{test_path}.jtl"
+end
+
+if VALID_RUN_TYPES.include?(command)
+  test = ARGV[1]
+  unless test
+    puts 'No test name given! Use --help option for usage details.'
+    exit(1)
+  end
+  require "#{__dir__}/../test-suite/#{test}/test"
+
+  puts "running test: #{test}" if options[:verbose]
+
+  test_response = run_test(options)
+
+  if command == TYPE_JMX
+    jmx(test_response, "#{__dir__}/../test-suite/#{test}/#{test}.jmx")
+  elsif command == TYPE_FLOOD
+    flood(test_response, test.gsub(/[_-]/, ' '), options)
+  elsif command == TYPE_JMETER
+    jmeter(test_response,test)
+  end
+elsif command == 'list'
+  root = __dir__ + '/../test-suite'
+  dirs = Dir.entries(root).select do |entry|
+    File.directory?(File.join(root, entry)) && !%w[. ..].include?(entry)
+  end
+  puts dirs.sort
+else
+  puts "Command '#{command}' not recognised!"
+  exit(1)
+end
