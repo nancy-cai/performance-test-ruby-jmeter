@@ -1,5 +1,5 @@
 module TestDefaults
-  BASE_URL = '/v2/pet'.freeze
+  BASE_URL = '/v2'.freeze
   TEST_DEFAULT_PATH = __dir__ + '/../helpers/test_defaults'
   TEST_HELPER_PATH = __dir__ + '/../helpers/test_helper'
   PETS_PATH = __dir__ + '/../test-data/pets.csv'

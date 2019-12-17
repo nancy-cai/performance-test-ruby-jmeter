@@ -27,11 +27,11 @@ def create_pets_test_plan(options)
           ],
           "status": "available"
         }' do
-          extract name: 'id', regex: %q{.*"id":"([^"]+)".*}
+          extract name: 'id', regex: %q{"id":(-[^,]+)}
         end
 
         throughput_controller name: 'get_pet_details_85%',percent: 85 do
-          get name: 'get user details', url: BASE_URL + '/${id}'
+          get name: 'get pet details', url: BASE_URL + '/pet/${id}'
         end
       end
 
@@ -64,9 +64,9 @@ def create_pets_test_plan(options)
 end
 
 def run_test(options)
-  options[:concurrency] = 20 unless options[:concurrency]
-  options[:rampup] = 10 unless options[:rampup]
-  options[:duration] = 30 unless options[:duration]
+  options[:concurrency] = 10 unless options[:concurrency]
+  options[:rampup] = 5 unless options[:rampup]
+  options[:duration] = 10 unless options[:duration]
 
   create_pets_test_plan(options)
 end
