@@ -28,6 +28,7 @@ def create_pets_test_plan(options)
           "status": "available"
         }' do
           extract name: 'id', regex: %q{"id":(-[^,]+)}
+          assert matches: 200, test_field: 'Assertion.response_code'
         end
 
         throughput_controller name: 'get_pet_details_85%',percent: 85 do
@@ -54,7 +55,9 @@ def create_pets_test_plan(options)
             }
           ],
           "status": "${status}"
-        }'
+        }' do
+          assert json: '.name', value: '${name}'
+        end
       end
 
     end
