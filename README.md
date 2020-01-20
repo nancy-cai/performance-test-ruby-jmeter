@@ -24,7 +24,7 @@ To run it in Jmeter GUI mode simply import the file to Jmeter, hit the "Run" but
 Note that Jmeter can only handle from 300-1000 threads depending on your script on each machine. <br />
 If you want to run with more threads then either run with several machines, or [increase Java heap size](https://stackoverflow.com/questions/2286750/jmeter-outofmemoryerror).<br />
 
-If you have subscribed to Flood.io plan then you can save FLOOD_API_TOKEN tp your env and do:
+If you have subscribed to Flood.io plan then you can save FLOOD_API_TOKEN in your env and do:
 ```sh
 bin/cli flood pet-signup
 ```
